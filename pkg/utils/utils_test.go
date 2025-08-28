@@ -1,12 +1,16 @@
 package utils
 
 import (
+	"context"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"testing"
 
 	"github.com/moby/buildkit/client/llb"
+	"github.com/opencontainers/image-spec/specs-go/v1"
+	"github.com/stretchr/testify/assert"
 )
 
 const (
@@ -171,4 +175,199 @@ func TestGetProxy(t *testing.T) {
 	if got != want {
 		t.Errorf("unexpected proxy config, got %#v want %#v", got, want)
 	}
+}
+
+// TestPodmanImageDescriptor tests the podmanImageDescriptor function
+func TestPodmanImageDescriptor(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("podman not available or image not found", func(t *testing.T) {
+		// Test when podman is not in PATH or image doesn't exist
+		desc, err := podmanImageDescriptor(ctx, "test-image:latest")
+		assert.Error(t, err)
+		assert.Nil(t, desc)
+		// Error could be either "podman not found in PATH" or "podman inspect failed"
+		// depending on whether podman is installed
+	})
+
+	// Only run podman tests if podman is available
+	if isPodmanAvailable() {
+		t.Run("podman available but image not found", func(t *testing.T) {
+			desc, err := podmanImageDescriptor(ctx, "nonexistent-image:latest")
+			assert.Error(t, err)
+			assert.Nil(t, desc)
+		})
+	} else {
+		t.Skip("Skipping podman tests - podman not available")
+	}
+}
+
+// TestLocalImageDescriptor tests the localImageDescriptor function
+func TestLocalImageDescriptor(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("nonexistent image", func(t *testing.T) {
+		// Test with a non-existent image
+		desc, err := localImageDescriptor(ctx, "nonexistent-image:latest")
+		// This will fail either because docker is not available or image doesn't exist
+		assert.Error(t, err)
+		assert.Nil(t, desc)
+	})
+
+	t.Run("invalid image reference", func(t *testing.T) {
+		// Test with invalid image reference
+		desc, err := localImageDescriptor(ctx, "invalid:::image::reference")
+		assert.Error(t, err)
+		assert.Nil(t, desc)
+	})
+}
+
+// TestGetImageDescriptor tests the main GetImageDescriptor function
+func TestGetImageDescriptor(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		imageRef string
+		runtime  string
+		wantErr  bool
+	}{
+		{
+			name:     "nonexistent image with Docker runtime",
+			imageRef: "nonexistent-test-image:latest",
+			runtime:  "docker",
+			wantErr:  true,
+		},
+		{
+			name:     "nonexistent image with Podman runtime",
+			imageRef: "nonexistent-test-image:latest",
+			runtime:  "podman",
+			wantErr:  true,
+		},
+		{
+			name:     "invalid image reference with Docker runtime",
+			imageRef: "invalid:::image::reference",
+			runtime:  "docker",
+			wantErr:  true,
+		},
+		{
+			name:     "empty image reference",
+			imageRef: "",
+			runtime:  "docker",
+			wantErr:  true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			desc, err := GetImageDescriptor(ctx, tt.imageRef, tt.runtime)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, desc)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, desc)
+			}
+		})
+	}
+}
+
+// TestGetIndexManifestAnnotations tests the GetIndexManifestAnnotations function
+func TestGetIndexManifestAnnotations(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name     string
+		imageRef string
+		wantErr  bool
+	}{
+		{
+			name:     "invalid image reference",
+			imageRef: "invalid:::image::reference",
+			wantErr:  true,
+		},
+		{
+			name:     "empty image reference",
+			imageRef: "",
+			wantErr:  true,
+		},
+		{
+			name:     "nonexistent image",
+			imageRef: "nonexistent-test-image:latest",
+			wantErr:  true, // Will fail during remote fetch
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			annotations, err := GetIndexManifestAnnotations(ctx, tt.imageRef)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, annotations)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, annotations)
+			}
+		})
+	}
+}
+
+// TestGetPlatformManifestAnnotations tests the GetPlatformManifestAnnotations function
+func TestGetPlatformManifestAnnotations(t *testing.T) {
+	ctx := context.Background()
+	testPlatform := &v1.Platform{
+		Architecture: "amd64",
+		OS:           "linux",
+	}
+
+	tests := []struct {
+		name     string
+		imageRef string
+		platform *v1.Platform
+		wantErr  bool
+	}{
+		{
+			name:     "invalid image reference",
+			imageRef: "invalid:::image::reference",
+			platform: testPlatform,
+			wantErr:  true,
+		},
+		{
+			name:     "empty image reference",
+			imageRef: "",
+			platform: testPlatform,
+			wantErr:  true,
+		},
+		{
+			name:     "nil platform",
+			imageRef: "test-image:latest",
+			platform: nil,
+			wantErr:  true,
+		},
+		{
+			name:     "nonexistent image",
+			imageRef: "nonexistent-test-image:latest",
+			platform: testPlatform,
+			wantErr:  true, // Will fail during remote fetch
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			annotations, err := GetPlatformManifestAnnotations(ctx, tt.imageRef, tt.platform)
+			if tt.wantErr {
+				assert.Error(t, err)
+				assert.Nil(t, annotations)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, annotations)
+			}
+		})
+	}
+}
+
+// Helper function to check if podman is available
+func isPodmanAvailable() bool {
+	_, err := exec.LookPath("podman")
+	return err == nil
 }
