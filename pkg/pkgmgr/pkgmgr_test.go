@@ -1,6 +1,9 @@
 package pkgmgr
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"testing"
@@ -8,6 +11,7 @@ import (
 	"github.com/project-copacetic/copacetic/pkg/buildkit"
 	"github.com/project-copacetic/copacetic/pkg/types/unversioned"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // TestGetPackageManager tests the GetPackageManager function.
@@ -215,4 +219,186 @@ func TestGetUniqueLatestUpdates(t *testing.T) {
 			}
 		})
 	}
+}
+
+// Mock PackageInfoReader for testing
+type mockPackageInfoReader struct {
+	nameMap    map[string]string
+	versionMap map[string]string
+	errors     map[string]error
+}
+
+func (m *mockPackageInfoReader) GetName(filename string) (string, error) {
+	if err, ok := m.errors[filename]; ok {
+		return "", err
+	}
+	if name, ok := m.nameMap[filename]; ok {
+		return name, nil
+	}
+	return "", fmt.Errorf("no name mapping for %s", filename)
+}
+
+func (m *mockPackageInfoReader) GetVersion(filename string) (string, error) {
+	if err, ok := m.errors[filename]; ok {
+		return "", err
+	}
+	if version, ok := m.versionMap[filename]; ok {
+		return version, nil
+	}
+	return "", fmt.Errorf("no version mapping for %s", filename)
+}
+
+func TestGetValidatedUpdatesMap(t *testing.T) {
+	// Create a temporary directory for testing
+	tempDir, err := os.MkdirTemp("", "pkgmgr-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	cmp := VersionComparer{IsValid, LessThan}
+
+	tests := []struct {
+		name           string
+		updates        unversioned.UpdatePackages
+		files          []string
+		reader         *mockPackageInfoReader
+		expectedResult UpdateMap
+		expectedError  string
+	}{
+		{
+			name:           "empty staging directory",
+			updates:        unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "1.0"}},
+			files:          []string{}, // No files in staging
+			reader:         &mockPackageInfoReader{},
+			expectedResult: nil,
+			expectedError:  "",
+		},
+		{
+			name:    "successful validation with matching packages",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "2.0"}},
+			files:   []string{"pkg1_2.0.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap:    map[string]string{"pkg1_2.0.deb": "pkg1"},
+				versionMap: map[string]string{"pkg1_2.0.deb": "2.0"},
+			},
+			expectedResult: UpdateMap{"pkg1": {Version: "2.0", Filename: "pkg1_2.0.deb"}},
+			expectedError:  "",
+		},
+		{
+			name:    "version mismatch error",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "2.0"}},
+			files:   []string{"pkg1_1.5.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap:    map[string]string{"pkg1_1.5.deb": "pkg1"},
+				versionMap: map[string]string{"pkg1_1.5.deb": "1.5"},
+			},
+			expectedResult: nil,
+			expectedError:  "downloaded package pkg1 version 1.5 lower than required 2.0",
+		},
+		{
+			name:    "invalid version in downloaded package",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "2.0"}},
+			files:   []string{"pkg1_invalid.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap:    map[string]string{"pkg1_invalid.deb": "pkg1"},
+				versionMap: map[string]string{"pkg1_invalid.deb": "invalid"},
+			},
+			expectedResult: nil,
+			expectedError:  "invalid version invalid found for package pkg1",
+		},
+		{
+			name:    "package name parsing error",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "1.0"}},
+			files:   []string{"broken.deb"},
+			reader: &mockPackageInfoReader{
+				errors: map[string]error{"broken.deb": fmt.Errorf("parse error")},
+			},
+			expectedResult: nil,
+			expectedError:  "parse error",
+		},
+		{
+			name:    "package version parsing error",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "1.0"}},
+			files:   []string{"pkg1.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap: map[string]string{"pkg1.deb": "pkg1"},
+				errors:  map[string]error{"pkg1.deb": fmt.Errorf("version parse error")},
+			},
+			expectedResult: nil,
+			expectedError:  "version parse error",
+		},
+		{
+			name:    "unexpected package not in updates - should be ignored with warning",
+			updates: unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "1.0"}},
+			files:   []string{"pkg2_1.0.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap:    map[string]string{"pkg2_1.0.deb": "pkg2"},
+				versionMap: map[string]string{"pkg2_1.0.deb": "1.0"},
+			},
+			expectedResult: UpdateMap{"pkg1": {Version: "1.0", Filename: ""}}, // pkg1 exists but no matching file
+			expectedError:  "",
+		},
+		{
+			name: "multiple packages successful validation",
+			updates: unversioned.UpdatePackages{
+				{Name: "pkg1", FixedVersion: "1.0"},
+				{Name: "pkg2", FixedVersion: "2.0"},
+			},
+			files: []string{"pkg1_1.0.deb", "pkg2_2.0.deb"},
+			reader: &mockPackageInfoReader{
+				nameMap:    map[string]string{"pkg1_1.0.deb": "pkg1", "pkg2_2.0.deb": "pkg2"},
+				versionMap: map[string]string{"pkg1_1.0.deb": "1.0", "pkg2_2.0.deb": "2.0"},
+			},
+			expectedResult: UpdateMap{
+				"pkg1": {Version: "1.0", Filename: "pkg1_1.0.deb"},
+				"pkg2": {Version: "2.0", Filename: "pkg2_2.0.deb"},
+			},
+			expectedError: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create test files in the temporary directory
+			for _, filename := range tt.files {
+				filePath := filepath.Join(tempDir, filename)
+				err := os.WriteFile(filePath, []byte("dummy content"), 0o644)
+				require.NoError(t, err)
+			}
+
+			// Call the function under test
+			result, err := GetValidatedUpdatesMap(tt.updates, cmp, tt.reader, tempDir)
+
+			// Check error expectations
+			if tt.expectedError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+				assert.Nil(t, result)
+			} else {
+				require.NoError(t, err)
+				if tt.expectedResult == nil {
+					assert.Nil(t, result)
+				} else {
+					assert.Equal(t, tt.expectedResult, result)
+				}
+			}
+
+			// Clean up test files for next iteration
+			for _, filename := range tt.files {
+				filePath := filepath.Join(tempDir, filename)
+				os.Remove(filePath)
+			}
+		})
+	}
+}
+
+func TestGetValidatedUpdatesMap_DirectoryErrors(t *testing.T) {
+	cmp := VersionComparer{IsValid, LessThan}
+	reader := &mockPackageInfoReader{}
+	updates := unversioned.UpdatePackages{{Name: "pkg1", FixedVersion: "1.0"}}
+
+	// Test with non-existent directory
+	result, err := GetValidatedUpdatesMap(updates, cmp, reader, "/non/existent/path")
+	assert.Error(t, err)
+	assert.Nil(t, result)
+	assert.Contains(t, err.Error(), "no such file or directory")
 }
