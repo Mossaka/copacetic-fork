@@ -73,13 +73,13 @@
 				
 				<option value="file8">github.com/project-copacetic/copacetic/pkg/imageloader/podman.go (100.0%)</option>
 				
-				<option value="file9">github.com/project-copacetic/copacetic/pkg/patch/build.go (60.7%)</option>
+				<option value="file9">github.com/project-copacetic/copacetic/pkg/patch/build.go (85.7%)</option>
 				
 				<option value="file10">github.com/project-copacetic/copacetic/pkg/patch/cmd.go (88.5%)</option>
 				
 				<option value="file11">github.com/project-copacetic/copacetic/pkg/patch/core.go (0.0%)</option>
 				
-				<option value="file12">github.com/project-copacetic/copacetic/pkg/patch/loader.go (20.0%)</option>
+				<option value="file12">github.com/project-copacetic/copacetic/pkg/patch/loader.go (100.0%)</option>
 				
 				<option value="file13">github.com/project-copacetic/copacetic/pkg/patch/manifest.go (0.0%)</option>
 				
@@ -99,9 +99,9 @@
 				
 				<option value="file21">github.com/project-copacetic/copacetic/pkg/pkgmgr/rpm.go (62.6%)</option>
 				
-				<option value="file22">github.com/project-copacetic/copacetic/pkg/report/report.go (51.4%)</option>
+				<option value="file22">github.com/project-copacetic/copacetic/pkg/report/report.go (91.9%)</option>
 				
-				<option value="file23">github.com/project-copacetic/copacetic/pkg/report/trivy.go (84.6%)</option>
+				<option value="file23">github.com/project-copacetic/copacetic/pkg/report/trivy.go (92.3%)</option>
 				
 				<option value="file24">github.com/project-copacetic/copacetic/pkg/test_utils/utils.go (71.4%)</option>
 				
@@ -111,9 +111,9 @@
 				
 				<option value="file27">github.com/project-copacetic/copacetic/pkg/utils/log.go (100.0%)</option>
 				
-				<option value="file28">github.com/project-copacetic/copacetic/pkg/utils/mediatype.go (52.1%)</option>
+				<option value="file28">github.com/project-copacetic/copacetic/pkg/utils/mediatype.go (72.9%)</option>
 				
-				<option value="file29">github.com/project-copacetic/copacetic/pkg/utils/utils.go (15.4%)</option>
+				<option value="file29">github.com/project-copacetic/copacetic/pkg/utils/utils.go (52.9%)</option>
 				
 				<option value="file30">github.com/project-copacetic/copacetic/pkg/vex/openvex.go (92.6%)</option>
 				
@@ -563,12 +563,12 @@ func SetupBuildkitConfigAndManager(
 }
 
 // GetDefaultLinuxPlatform returns a normalized Linux platform, defaulting to Linux if not already Linux.
-func GetDefaultLinuxPlatform() ispec.Platform <span class="cov10" title="2">{
+func GetDefaultLinuxPlatform() ispec.Platform <span class="cov10" title="3">{
         platform := platforms.Normalize(platforms.DefaultSpec())
         if platform.OS != LINUX </span><span class="cov0" title="0">{
                 platform.OS = LINUX
         }</span>
-        <span class="cov10" title="2">return platform</span>
+        <span class="cov10" title="3">return platform</span>
 }
 </pre>
 		
@@ -926,7 +926,7 @@ func createBuildConfig(
         push bool,
         _ buildkit.Opts,
         pipeW io.WriteCloser,
-) (*BuildConfig, error) <span class="cov8" title="1">{
+) (*BuildConfig, error) <span class="cov1" title="1">{
         dockerConfig := config.LoadDefaultConfigFile(os.Stderr)
         cfg := authprovider.DockerAuthProviderConfig{ConfigFile: dockerConfig}
         attachable := []session.Attachable{authprovider.NewDockerAuthProvider(cfg)}
@@ -942,11 +942,11 @@ func createBuildConfig(
                 "name": patchedImageName,
                 "annotation." + copaAnnotationKeyPrefix + ".image.patched": time.Now().UTC().Format(time.RFC3339),
         }
-        if shouldExportOCI </span><span class="cov8" title="1">{
+        if shouldExportOCI </span><span class="cov1" title="1">{
                 attrs["oci-mediatypes"] = "true"
         }</span>
 
-        <span class="cov8" title="1">if push </span><span class="cov8" title="1">{
+        <span class="cov1" title="1">if push </span><span class="cov1" title="1">{
                 attrs["push"] = "true"
                 solveOpt.Exports = []client.ExportEntry{
                         {
@@ -967,17 +967,17 @@ func createBuildConfig(
         }
 
         // Set source policy
-        <span class="cov8" title="1">sourcePolicy, err := build.ReadSourcePolicy()
+        <span class="cov1" title="1">sourcePolicy, err := build.ReadSourcePolicy()
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
-        <span class="cov8" title="1">solveOpt.SourcePolicy = sourcePolicy
+        <span class="cov1" title="1">solveOpt.SourcePolicy = sourcePolicy
 
         if err := validateSourcePolicy(solveOpt.SourcePolicy); err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov8" title="1">return &amp;BuildConfig{
+        <span class="cov1" title="1">return &amp;BuildConfig{
                 SolveOpt:        solveOpt,
                 ShouldExportOCI: shouldExportOCI,
                 PipeWriter:      pipeW,
@@ -985,29 +985,29 @@ func createBuildConfig(
 }
 
 // validateSourcePolicy validates that the source policy doesn't contain unsupported distributions.
-func validateSourcePolicy(sourcePolicy *sourcepolicy.Policy) error <span class="cov8" title="1">{
-        if sourcePolicy == nil || len(sourcePolicy.Rules) == 0 </span><span class="cov8" title="1">{
+func validateSourcePolicy(sourcePolicy *sourcepolicy.Policy) error <span class="cov10" title="11">{
+        if sourcePolicy == nil || len(sourcePolicy.Rules) == 0 </span><span class="cov5" title="3">{
                 return nil
         }</span>
 
-        <span class="cov0" title="0">rule := sourcePolicy.Rules[0]
+        <span class="cov8" title="8">rule := sourcePolicy.Rules[0]
         identifier := rule.Updates.Identifier
 
         switch </span>{
-        case strings.Contains(identifier, "redhat"):<span class="cov0" title="0">
+        case strings.Contains(identifier, "redhat"):<span class="cov3" title="2">
                 return errors.New("RedHat is not supported via source policies due to BusyBox not being in the RHEL repos\n" +
                         "Please use a different RPM-based image")</span>
 
-        case strings.Contains(identifier, "rockylinux"):<span class="cov0" title="0">
+        case strings.Contains(identifier, "rockylinux"):<span class="cov1" title="1">
                 return errors.New("RockyLinux is not supported via source policies due to BusyBox not being in the RockyLinux repos\n" +
                         "Please use a different RPM-based image")</span>
 
-        case strings.Contains(identifier, "alma"):<span class="cov0" title="0">
+        case strings.Contains(identifier, "alma"):<span class="cov1" title="1">
                 return errors.New("AlmaLinux is not supported via source policies due to BusyBox not being in the AlmaLinux repos\n" +
                         "Please use a different RPM-based image")</span>
         }
 
-        <span class="cov0" title="0">return nil</span>
+        <span class="cov6" title="4">return nil</span>
 }
 </pre>
 		
@@ -1297,23 +1297,23 @@ import (
 
 // detectLoaderFromBuildkitAddr attempts to determine the appropriate loader
 // based on the buildkit connection address scheme.
-func detectLoaderFromBuildkitAddr(addr string) string <span class="cov8" title="1">{
-        if addr == "" </span><span class="cov8" title="1">{
+func detectLoaderFromBuildkitAddr(addr string) string <span class="cov10" title="14">{
+        if addr == "" </span><span class="cov3" title="2">{
                 return ""
         }</span>
 
-        <span class="cov0" title="0">u, err := url.Parse(addr)
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov9" title="12">u, err := url.Parse(addr)
+        if err != nil </span><span class="cov1" title="1">{
                 log.Debugf("Failed to parse buildkit address %q: %v", addr, err)
                 return ""
         }</span>
 
-        <span class="cov0" title="0">switch u.Scheme </span>{
-        case "podman-container":<span class="cov0" title="0">
+        <span class="cov9" title="11">switch u.Scheme </span>{
+        case "podman-container":<span class="cov4" title="3">
                 return imageloader.Podman</span>
-        case "docker-container", "docker", "buildx":<span class="cov0" title="0">
+        case "docker-container", "docker", "buildx":<span class="cov5" title="4">
                 return imageloader.Docker</span>
-        default:<span class="cov0" title="0">
+        default:<span class="cov5" title="4">
                 // Unknown scheme, let imageloader auto-detect
                 return ""</span>
         }
@@ -4627,59 +4627,59 @@ type ErrorUnsupported struct {
         err error
 }
 
-func (e *ErrorUnsupported) Error() string <span class="cov0" title="0">{ return e.err.Error() }</span>
+func (e *ErrorUnsupported) Error() string <span class="cov10" title="5">{ return e.err.Error() }</span>
 
 type ScanReportParser interface {
         Parse(string) (*unversioned.UpdateManifest, error)
 }
 
-func TryParseScanReport(file, scanner string) (*unversioned.UpdateManifest, error) <span class="cov10" title="4">{
-        if scanner == "trivy" </span><span class="cov5" title="2">{
+func TryParseScanReport(file, scanner string) (*unversioned.UpdateManifest, error) <span class="cov10" title="5">{
+        if scanner == "trivy" </span><span class="cov4" title="2">{
                 return defaultParseScanReport(file)
         }</span>
-        <span class="cov5" title="2">return customParseScanReport(file, scanner)</span>
+        <span class="cov7" title="3">return customParseScanReport(file, scanner)</span>
 }
 
-func customParseScanReport(file, scanner string) (*unversioned.UpdateManifest, error) <span class="cov5" title="2">{
+func customParseScanReport(file, scanner string) (*unversioned.UpdateManifest, error) <span class="cov10" title="5">{
         var scannerOutput []byte
         var err error
 
-        if scanner != "native" </span><span class="cov5" title="2">{
+        if scanner != "native" </span><span class="cov7" title="3">{
                 // Execute the plugin binary
                 cmd := "copa-" + scanner
                 scannerCommand := exec.Command(cmd, file)
                 // Capture the output
                 scannerOutput, err = scannerCommand.CombinedOutput()
-                if err != nil </span><span class="cov5" title="2">{
+                if err != nil </span><span class="cov7" title="3">{
                         return nil, fmt.Errorf("error running scanner %s: %w", scanner, err)
                 }</span>
-        } else<span class="cov0" title="0"> {
+        } else<span class="cov4" title="2"> {
                 // Read the file directly if they are in v1alpha1 format
                 scannerOutput, err = os.ReadFile(file)
-                if err != nil </span><span class="cov0" title="0">{
+                if err != nil </span><span class="cov1" title="1">{
                         return nil, fmt.Errorf("error reading file %s: %w", file, err)
                 }</span>
         }
 
-        <span class="cov0" title="0">var m map[string]interface{}
+        <span class="cov1" title="1">var m map[string]interface{}
         if err := json.Unmarshal(scannerOutput, &amp;m); err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("error parsing scanner output: %w", err)
         }</span>
 
         // Convert the output to an unversioned UpdateManifest struct
-        <span class="cov0" title="0">updateManifest, err := convertToUnversionedAPI(scannerOutput, m)
+        <span class="cov1" title="1">updateManifest, err := convertToUnversionedAPI(scannerOutput, m)
         if err != nil </span><span class="cov0" title="0">{
                 return nil, err
         }</span>
 
-        <span class="cov0" title="0">return updateManifest, nil</span>
+        <span class="cov1" title="1">return updateManifest, nil</span>
 }
 
-func defaultParseScanReport(file string) (*unversioned.UpdateManifest, error) <span class="cov5" title="2">{
+func defaultParseScanReport(file string) (*unversioned.UpdateManifest, error) <span class="cov4" title="2">{
         allParsers := []ScanReportParser{
                 &amp;TrivyParser{},
         }
-        for _, parser := range allParsers </span><span class="cov5" title="2">{
+        for _, parser := range allParsers </span><span class="cov4" title="2">{
                 manifest, err := parser.Parse(file)
                 if err == nil </span><span class="cov1" title="1">{
                         return manifest, nil
@@ -4691,15 +4691,15 @@ func defaultParseScanReport(file string) (*unversioned.UpdateManifest, error) <s
         <span class="cov1" title="1">return nil, fmt.Errorf("%s is not a supported scan report format", file)</span>
 }
 
-func convertToUnversionedAPI(scannerOutput []byte, m map[string]interface{}) (*unversioned.UpdateManifest, error) <span class="cov0" title="0">{
+func convertToUnversionedAPI(scannerOutput []byte, m map[string]interface{}) (*unversioned.UpdateManifest, error) <span class="cov10" title="5">{
         switch v := m["apiVersion"].(type) </span>{
-        case string:<span class="cov0" title="0">
-                if v == "v1alpha1" </span><span class="cov0" title="0">{
+        case string:<span class="cov7" title="3">
+                if v == "v1alpha1" </span><span class="cov4" title="2">{
                         um, err := v1alpha1.ConvertV1alpha1UpdateManifestToUnversionedUpdateManifest(scannerOutput)
                         return um, err
                 }</span>
-                <span class="cov0" title="0">return nil, &amp;ErrorUnsupported{fmt.Errorf("unsupported apiVersion: %s", v)}</span>
-        default:<span class="cov0" title="0">
+                <span class="cov1" title="1">return nil, &amp;ErrorUnsupported{fmt.Errorf("unsupported apiVersion: %s", v)}</span>
+        default:<span class="cov4" title="2">
                 return nil, &amp;ErrorUnsupported{fmt.Errorf("unsupported apiVersion type: %v", v)}</span>
         }
 }
@@ -4718,25 +4718,25 @@ import (
 
 type TrivyParser struct{}
 
-func parseTrivyReport(file string) (*trivyTypes.Report, error) <span class="cov10" title="4">{
+func parseTrivyReport(file string) (*trivyTypes.Report, error) <span class="cov10" title="6">{
         data, err := os.ReadFile(file)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov1" title="1">{
                 return nil, err
         }</span>
-        <span class="cov10" title="4">var msr trivyTypes.Report
-        if err = json.Unmarshal(data, &amp;msr); err != nil </span><span class="cov5" title="2">{
+        <span class="cov9" title="5">var msr trivyTypes.Report
+        if err = json.Unmarshal(data, &amp;msr); err != nil </span><span class="cov6" title="3">{
                 return nil, &amp;ErrorUnsupported{err}
         }</span>
-        <span class="cov5" title="2">return &amp;msr, nil</span>
+        <span class="cov4" title="2">return &amp;msr, nil</span>
 }
 
-func NewTrivyParser() *TrivyParser <span class="cov0" title="0">{
+func NewTrivyParser() *TrivyParser <span class="cov4" title="2">{
         return &amp;TrivyParser{}
 }</span>
 
-func (t *TrivyParser) Parse(file string) (*unversioned.UpdateManifest, error) <span class="cov5" title="2">{
+func (t *TrivyParser) Parse(file string) (*unversioned.UpdateManifest, error) <span class="cov7" title="4">{
         report, err := parseTrivyReport(file)
-        if err != nil </span><span class="cov1" title="1">{
+        if err != nil </span><span class="cov6" title="3">{
                 return nil, err
         }</span>
 
@@ -5046,7 +5046,7 @@ import (
 // For testing.
 var (
         remoteGet = remote.Get
-        newClient = func() (dockerClient.APIClient, error) <span class="cov0" title="0">{
+        newClient = func() (dockerClient.APIClient, error) <span class="cov10" title="6">{
                 return dockerClient.NewClientWithOpts(
                         dockerClient.FromEnv,
                         dockerClient.WithAPIVersionNegotiation(),
@@ -5056,57 +5056,57 @@ var (
 
 // GetMediaType returns the manifest’s media type for an image reference
 // It prefers a local inspection and falls back to a registry lookup.
-func GetMediaType(imageRef, runtime string) (string, error) <span class="cov5" title="2">{
+func GetMediaType(imageRef, runtime string) (string, error) <span class="cov6" title="3">{
         // Check if the image is local first using the appropriate runtime
         var mt string
         var err error
 
         switch runtime </span>{
-        case imageloader.Podman:<span class="cov0" title="0">
+        case imageloader.Podman:<span class="cov1" title="1">
                 mt, err = podmanMediaType(imageRef)</span>
-        default:<span class="cov5" title="2">
+        default:<span class="cov4" title="2">
                 // Default to Docker
                 mt, err = localMediaType(imageRef)</span>
         }
 
-        <span class="cov5" title="2">if err == nil &amp;&amp; mt != "" </span><span class="cov1" title="1">{
+        <span class="cov6" title="3">if err == nil &amp;&amp; mt != "" </span><span class="cov1" title="1">{
                 log.Debugf("local media type found for %s using %s: %s", imageRef, runtime, mt)
                 return mt, nil
         }</span>
-        <span class="cov1" title="1">log.Debugf("local media type not found for %s using %s: %v", imageRef, runtime, err)
+        <span class="cov4" title="2">log.Debugf("local media type not found for %s using %s: %v", imageRef, runtime, err)
 
         // If the image is not local, use the remote media type
         return remoteMediaType(imageRef)</span>
 }
 
-func localMediaType(imageRef string) (string, error) <span class="cov10" title="4">{
+func localMediaType(imageRef string) (string, error) <span class="cov9" title="5">{
         cli, err := newClient()
         if err != nil </span><span class="cov0" title="0">{
                 return "", err
         }</span>
-        <span class="cov10" title="4">defer cli.Close()
+        <span class="cov9" title="5">defer cli.Close()
 
         distInspect, err := cli.ImageInspect(context.Background(), imageRef)
-        if err != nil </span><span class="cov5" title="2">{
+        if err != nil </span><span class="cov4" title="2">{
                 return "", err
         }</span>
-        <span class="cov5" title="2">if distInspect.Descriptor == nil </span><span class="cov0" title="0">{
+        <span class="cov6" title="3">if distInspect.Descriptor == nil </span><span class="cov1" title="1">{
                 return "", errors.New("descriptor is nil")
         }</span>
-        <span class="cov5" title="2">return distInspect.Descriptor.MediaType, nil</span>
+        <span class="cov4" title="2">return distInspect.Descriptor.MediaType, nil</span>
 }
 
 // podmanMediaType tries to get the manifest's media type using podman CLI.
-func podmanMediaType(imageRef string) (string, error) <span class="cov0" title="0">{
+func podmanMediaType(imageRef string) (string, error) <span class="cov4" title="2">{
         // Check if podman is available
         if _, err := exec.LookPath("podman"); err != nil </span><span class="cov0" title="0">{
                 return "", err
         }</span>
 
         // Run podman inspect to get image metadata
-        <span class="cov0" title="0">cmd := exec.Command("podman", "inspect", "--type", "image", imageRef)
+        <span class="cov4" title="2">cmd := exec.Command("podman", "inspect", "--type", "image", imageRef)
         output, err := cmd.Output()
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov4" title="2">{
                 return "", err
         }</span>
 
@@ -5135,18 +5135,18 @@ func podmanMediaType(imageRef string) (string, error) <span class="cov0" title="
         <span class="cov0" title="0">return "", nil</span>
 }
 
-func remoteMediaType(imageRef string) (string, error) <span class="cov8" title="3">{
+func remoteMediaType(imageRef string) (string, error) <span class="cov9" title="5">{
         ref, err := name.ParseReference(imageRef)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov1" title="1">{
                 log.Debugf("failed to parse reference %s: %v", imageRef, err)
                 return "", err
         }</span>
-        <span class="cov8" title="3">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+        <span class="cov7" title="4">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
         if err != nil </span><span class="cov1" title="1">{
                 log.Debugf("failed to get remote media type for %s: %v", imageRef, err)
                 return "", err
         }</span>
-        <span class="cov5" title="2">log.Debugf("remote media type found for %s: %s", imageRef, desc.MediaType)
+        <span class="cov6" title="3">log.Debugf("remote media type found for %s: %s", imageRef, desc.MediaType)
         return string(desc.MediaType), nil</span>
 }
 </pre>
@@ -5222,15 +5222,15 @@ func GetProxy() llb.ProxyEnv <span class="cov4" title="2">{
 }</span>
 
 // localImageDescriptor tries to get the OCI image descriptor using the local Docker client.
-func localImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descriptor, error) <span class="cov0" title="0">{
+func localImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descriptor, error) <span class="cov8" title="6">{
         cli, err := newClient()
         if err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("failed to create docker client: %w", err)
         }</span>
-        <span class="cov0" title="0">defer cli.Close()
+        <span class="cov8" title="6">defer cli.Close()
 
         distInspect, err := cli.ImageInspect(ctx, imageRef)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov8" title="6">{
                 return nil, err
         }</span>
 
@@ -5238,24 +5238,24 @@ func localImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descri
 }
 
 // podmanImageDescriptor tries to get the OCI image descriptor using podman CLI.
-func podmanImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descriptor, error) <span class="cov0" title="0">{
+func podmanImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descriptor, error) <span class="cov5" title="3">{
         // Check if podman is available
         if _, err := exec.LookPath("podman"); err != nil </span><span class="cov0" title="0">{
                 return nil, fmt.Errorf("podman not found in PATH: %w", err)
         }</span>
 
         // Run podman inspect to get image metadata
-        <span class="cov0" title="0">cmd := exec.CommandContext(ctx, "podman", "inspect", "--type", "image", imageRef)
+        <span class="cov5" title="3">cmd := exec.CommandContext(ctx, "podman", "inspect", "--type", "image", imageRef)
         output, err := cmd.Output()
-        if err != nil </span><span class="cov0" title="0">{
-                if exitErr, ok := err.(*exec.ExitError); ok </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov5" title="3">{
+                if exitErr, ok := err.(*exec.ExitError); ok </span><span class="cov4" title="2">{
                         // Check if it's a "not found" error
                         stderr := string(exitErr.Stderr)
                         if strings.Contains(stderr, "no such image") || strings.Contains(stderr, "not found") </span><span class="cov0" title="0">{
                                 return nil, errdefs.ErrNotFound
                         }</span>
                 }
-                <span class="cov0" title="0">return nil, fmt.Errorf("podman inspect failed: %w", err)</span>
+                <span class="cov5" title="3">return nil, fmt.Errorf("podman inspect failed: %w", err)</span>
         }
 
         // Parse the JSON output
@@ -5309,14 +5309,14 @@ func podmanImageDescriptor(ctx context.Context, imageRef string) (*ocispec.Descr
 }
 
 // remoteImageDescriptor tries to get the OCI image descriptor from a remote registry.
-func remoteImageDescriptor(imageRef string) (*ocispec.Descriptor, error) <span class="cov0" title="0">{
+func remoteImageDescriptor(imageRef string) (*ocispec.Descriptor, error) <span class="cov9" title="7">{
         ref, err := name.ParseReference(imageRef)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov1" title="1">{
                 return nil, fmt.Errorf("failed to parse image reference '%s': %w", imageRef, err)
         }</span>
 
-        <span class="cov0" title="0">ggcrDesc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov8" title="6">ggcrDesc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+        if err != nil </span><span class="cov8" title="6">{
                 log.Debugf("failed to get remote descriptor for %s: %v", imageRef, err)
                 return nil, fmt.Errorf("failed to get remote descriptor for '%s': %w", imageRef, err)
         }</span>
@@ -5347,40 +5347,40 @@ func remoteImageDescriptor(imageRef string) (*ocispec.Descriptor, error) <span c
 // It first tries to inspect the image using the specified runtime client (local).
 // If the image is not found locally or a local error occurs, it tries to get the image descriptor from the remote registry.
 // runtime should be imageloader.Docker or imageloader.Podman.
-func GetImageDescriptor(ctx context.Context, imageRef, runtime string) (*ocispec.Descriptor, error) <span class="cov0" title="0">{
+func GetImageDescriptor(ctx context.Context, imageRef, runtime string) (*ocispec.Descriptor, error) <span class="cov7" title="5">{
         log.Debugf("Attempting to get local image descriptor for %s using runtime %s", imageRef, runtime)
 
         var localDesc *ocispec.Descriptor
         var localErr error
 
         switch runtime </span>{
-        case imageloader.Podman:<span class="cov0" title="0">
+        case imageloader.Podman:<span class="cov1" title="1">
                 localDesc, localErr = podmanImageDescriptor(ctx, imageRef)</span>
-        default:<span class="cov0" title="0">
+        default:<span class="cov7" title="4">
                 // Default to Docker
                 localDesc, localErr = localImageDescriptor(ctx, imageRef)</span>
         }
 
-        <span class="cov0" title="0">if localErr == nil </span><span class="cov0" title="0">{
+        <span class="cov7" title="5">if localErr == nil </span><span class="cov0" title="0">{
                 log.Infof("found local image descriptor for %s via %s", imageRef, runtime)
                 return localDesc, nil
         }</span>
 
-        <span class="cov0" title="0">isNotFoundError := errdefs.IsNotFound(localErr)
-        if isNotFoundError </span><span class="cov0" title="0">{
+        <span class="cov7" title="5">isNotFoundError := errdefs.IsNotFound(localErr)
+        if isNotFoundError </span><span class="cov5" title="3">{
                 log.Debugf("image %s not found locally in %s (error: %v), trying remote.", imageRef, runtime, localErr)
-        }</span> else<span class="cov0" title="0"> {
+        }</span> else<span class="cov4" title="2"> {
                 log.Warnf("local descriptor lookup for %s failed in %s (error: %v), trying remote.", imageRef, runtime, localErr)
         }</span>
 
-        <span class="cov0" title="0">log.Debugf("attempting to get remote image descriptor for %s", imageRef)
+        <span class="cov7" title="5">log.Debugf("attempting to get remote image descriptor for %s", imageRef)
         remoteDesc, remoteErr := remoteImageDescriptor(imageRef)
-        if remoteErr != nil </span><span class="cov0" title="0">{
+        if remoteErr != nil </span><span class="cov7" title="5">{
                 log.Errorf("failed to get remote image descriptor for %s: %v", imageRef, remoteErr)
-                if isNotFoundError </span><span class="cov0" title="0">{
+                if isNotFoundError </span><span class="cov5" title="3">{
                         return nil, fmt.Errorf("image '%s' not found locally and remote lookup failed: %w", imageRef, remoteErr)
                 }</span>
-                <span class="cov0" title="0">return nil, fmt.Errorf("local lookup for '%s' failed (error: %v) and remote lookup also failed (error: %v)", imageRef, localErr, remoteErr)</span>
+                <span class="cov4" title="2">return nil, fmt.Errorf("local lookup for '%s' failed (error: %v) and remote lookup also failed (error: %v)", imageRef, localErr, remoteErr)</span>
         }
 
         <span class="cov0" title="0">log.Infof("found remote image descriptor for %s", imageRef)
@@ -5389,15 +5389,15 @@ func GetImageDescriptor(ctx context.Context, imageRef, runtime string) (*ocispec
 
 // GetIndexManifestAnnotations retrieves annotations from an image index manifest.
 // This is specifically for multi-platform images to get the index-level annotations.
-func GetIndexManifestAnnotations(_ context.Context, imageRef string) (map[string]string, error) <span class="cov0" title="0">{
+func GetIndexManifestAnnotations(_ context.Context, imageRef string) (map[string]string, error) <span class="cov4" title="2">{
         ref, err := name.ParseReference(imageRef)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov1" title="1">{
                 return nil, fmt.Errorf("failed to parse image reference '%s': %w", imageRef, err)
         }</span>
 
         // First check if this is an index
-        <span class="cov0" title="0">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov1" title="1">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+        if err != nil </span><span class="cov1" title="1">{
                 return nil, fmt.Errorf("failed to get descriptor for '%s': %w", imageRef, err)
         }</span>
 
@@ -5425,15 +5425,15 @@ func GetIndexManifestAnnotations(_ context.Context, imageRef string) (map[string
 
 // GetPlatformManifestAnnotations retrieves manifest-level annotations for a specific platform
 // from an image index manifest.
-func GetPlatformManifestAnnotations(_ context.Context, imageRef string, targetPlatform *ocispec.Platform) (map[string]string, error) <span class="cov0" title="0">{
+func GetPlatformManifestAnnotations(_ context.Context, imageRef string, targetPlatform *ocispec.Platform) (map[string]string, error) <span class="cov5" title="3">{
         ref, err := name.ParseReference(imageRef)
-        if err != nil </span><span class="cov0" title="0">{
+        if err != nil </span><span class="cov1" title="1">{
                 return nil, fmt.Errorf("failed to parse image reference '%s': %w", imageRef, err)
         }</span>
 
         // First check if this is an index
-        <span class="cov0" title="0">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-        if err != nil </span><span class="cov0" title="0">{
+        <span class="cov4" title="2">desc, err := remoteGet(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+        if err != nil </span><span class="cov4" title="2">{
                 return nil, fmt.Errorf("failed to get descriptor for '%s': %w", imageRef, err)
         }</span>
 
